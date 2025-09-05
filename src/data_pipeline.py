@@ -15,11 +15,55 @@ from pathlib import Path
 import duckdb
 from pyspark.sql import functions as func
 
-from .spark_manager import SparkManager
+import os
+from pyspark.sql import SparkSession
+from pyspark.conf import SparkConf
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def create_spark_session(app_name: str = "PropertyDataPipeline") -> SparkSession:
+    """Create a simple Spark session for local execution."""
+    # Set environment variables if not set
+    if not os.environ.get('JAVA_HOME'):
+        os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-11-openjdk-amd64'
+        logger.info(f"Set JAVA_HOME to: {os.environ['JAVA_HOME']}")
+    
+    # Use findspark to locate and initialize PySpark
+    try:
+        import findspark
+        spark_home = '/home/airflow/.local/lib/python3.11/site-packages/pyspark'
+        findspark.init(spark_home=spark_home)
+        logger.info(f"Initialized PySpark with findspark: {spark_home}")
+    except ImportError:
+        logger.warning("findspark not available, using manual configuration")
+        if not os.environ.get('SPARK_HOME'):
+            os.environ['SPARK_HOME'] = '/home/airflow/.local/lib/python3.11/site-packages/pyspark'
+    
+    # Create simple Spark configuration
+    conf = SparkConf()
+    conf.set("spark.app.name", app_name)
+    conf.set("spark.master", "local[*]")
+    conf.set("spark.driver.memory", "1g")
+    conf.set("spark.executor.memory", "1g")
+    conf.set("spark.ui.enabled", "false")
+    conf.set("spark.sql.warehouse.dir", "/tmp/spark-warehouse")
+    conf.set("spark.driver.host", "localhost")
+    conf.set("spark.driver.bindAddress", "0.0.0.0")
+    
+    # Additional configurations to avoid external dependencies
+    conf.set("spark.shuffle.service.enabled", "false")
+    conf.set("spark.dynamicAllocation.enabled", "false")
+    conf.set("spark.sql.adaptive.enabled", "false")  # Disable adaptive query execution
+    
+    # Create Spark session
+    spark = SparkSession.builder.config(conf=conf).getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
+    
+    logger.info(f"Spark session created successfully: {app_name}")
+    return spark
 
 
 def create_duckdb_table(duckdb_conn):
@@ -201,7 +245,7 @@ def save_to_duckdb(df, duckdb_conn):
     pandas_df = df.toPandas()
     
     # Clear existing data and insert new data
-    duckdb_conn.execute("DELETE FROM properties")
+    duckdb_conn.execute("TRUNCATE TABLE properties")
     duckdb_conn.register('df_temp', pandas_df)
     duckdb_conn.execute("""
         INSERT INTO properties 
@@ -319,9 +363,10 @@ def main():
     # Ensure output directory exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     
-    # Run pipeline with Spark
-    spark_manager = SparkManager("PropertyDataPipeline")
-    with spark_manager as spark:
+    # Create Spark session
+    spark = create_spark_session()
+    
+    try:
         stats = run_pipeline(spark, input_file, db_path)
         
         print("\nPipeline Statistics:")
@@ -336,6 +381,9 @@ def main():
                 print(f"  {sample}")
         finally:
             duckdb_conn.close()
+    finally:
+        # Stop Spark session
+        spark.stop()
 
 
 if __name__ == "__main__":

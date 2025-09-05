@@ -6,3 +6,4 @@ regex==2023.10.3
 apache-airflow-providers-common-sql==1.8.1
 apache-airflow-providers-apache-spark==4.3.0
 py4j==0.10.9.7
+findspark==2.0.1

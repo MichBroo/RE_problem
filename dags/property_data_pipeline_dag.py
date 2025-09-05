@@ -21,8 +21,7 @@ from airflow.utils.dates import days_ago
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from data_pipeline import run_pipeline, get_sample_output
-from spark_manager import SparkManager
+from data_pipeline import run_pipeline, get_sample_output, create_spark_session
 
 
 # Default arguments for the DAG
@@ -84,10 +83,12 @@ def run_data_pipeline(**context):
     # Ensure output directory exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     
-    # Run pipeline with Spark
-    spark_manager = SparkManager("AirflowPropertyPipeline")
-    with spark_manager as spark:
+    # Create and run pipeline with Spark
+    spark = create_spark_session("AirflowPropertyPipeline")
+    try:
         stats = run_pipeline(spark, input_file, db_path)
+    finally:
+        spark.stop()
     
     # Push statistics to XCom for downstream tasks
     context['task_instance'].xcom_push(key='pipeline_stats', value=stats)
