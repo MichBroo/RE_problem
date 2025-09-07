@@ -14,7 +14,8 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import once at module level
-from data_pipeline import parse_price_spark, apply_filters, get_sample_output, create_spark_session
+from data_pipeline import parse_price_spark, apply_filters, get_sample_output
+from spark_utils import create_spark_session
 
 
 def test_price_parsing():

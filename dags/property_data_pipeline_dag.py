@@ -22,6 +22,7 @@ from airflow.utils.dates import days_ago
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from data_pipeline import execute_pipeline, get_sample_output
+from spark_utils import create_spark_session
 
 
 # Default arguments for the DAG

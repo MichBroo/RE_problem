@@ -99,7 +99,8 @@ python src/data_pipeline.py
 ```
 RE_problem/
 ├── src/
-│   └── data_pipeline.py             # Main pipeline logic and Spark management
+│   ├── data_pipeline.py             # Main pipeline logic
+│   └── spark_utils.py               # Spark session utilities and multi-arch support
 ├── dags/
 │   └── property_data_pipeline_dag.py # Airflow DAG definition
 ├── input/
@@ -162,13 +163,13 @@ The pipeline applies the following filters:
 - `run_pipeline()`: Core ETL orchestration (low-level)
 - `execute_pipeline()`: Complete pipeline execution with logging and output (unified entry point)
 
-### 2. Spark Management
+### 2. Spark Utilities (`src/spark_utils.py`)
 
-**Spark Session Creation (`create_spark_session`):**
-- Multi-architecture Java detection (ARM64, x86_64)
-- Container-optimized Spark configuration
-- Automatic resource management and cleanup
-- Fallback configurations for resource-constrained environments
+**Spark Session Management:**
+- `create_spark_session()`: Multi-architecture Spark session creation
+- `_detect_java_home()`: Dynamic Java installation detection (ARM64, x86_64, etc.)
+- `_detect_spark_home()`: PySpark installation auto-discovery
+- Container-optimized configurations and fallback handling
 
 ### 3. Orchestration (`dags/property_data_pipeline_dag.py`)
 
