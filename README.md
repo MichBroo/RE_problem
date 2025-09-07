@@ -300,5 +300,3 @@ Sample Output:
 The pipeline successfully processes property data with comprehensive validation, quality checks, and scalability features ready for production use.
 
 ---
-
-*This project demonstrates a production-ready data pipeline using modern tools like Apache Spark, Apache Airflow, and DuckDB for efficient property data processing.*
