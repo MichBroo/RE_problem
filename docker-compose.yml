@@ -39,18 +39,22 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./input:/opt/airflow/input
-      - ./output:/opt/airflow/output:rw  # Read-write permissions
+      - output-volume:/opt/airflow/output  # Use Docker volume instead of bind mount
       - ./src:/opt/airflow/src
+    user: "0:0"  # Run as root to handle Windows volume permissions
     depends_on:
       postgres:
         condition: service_healthy
     restart: always
     command: >
       bash -c "
-        airflow db init &&
-        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin &&
-        airflow webserver --port 8080 &
-        airflow scheduler
+        rm -f /opt/airflow/output/properties.duckdb* &&
+        chown -R airflow:root /opt/airflow/output /opt/airflow/logs /opt/airflow/input &&
+        chmod -R 777 /opt/airflow/output /opt/airflow/logs /opt/airflow/input &&
+        su airflow -c 'airflow db init' &&
+        su airflow -c 'airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin' || true &&
+        su airflow -c 'airflow webserver --port 8080' &
+        su airflow -c 'airflow scheduler'
       "
 
   # Standalone service to run the pipeline without Airflow (optional)
@@ -60,13 +64,36 @@ services:
       - standalone
     volumes:
       - ./input:/opt/airflow/input
-      - ./output:/opt/airflow/output:rw  # Read-write permissions
+      - output-volume:/opt/airflow/output  # Use Docker volume instead of bind mount
       - ./src:/opt/airflow/src
+    user: "0:0"  # Run as root to handle Windows volume permissions
     environment:
       PYTHONPATH: "/opt/airflow/src"
       JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
       SPARK_HOME: /opt/airflow/.local/lib/python3.11/site-packages/pyspark
-    command: python /opt/airflow/src/data_pipeline.py
+    command: >
+      bash -c "
+        rm -f /opt/airflow/output/properties.duckdb* &&
+        chown -R airflow:root /opt/airflow/output /opt/airflow/input &&
+        chmod -R 777 /opt/airflow/output /opt/airflow/input &&
+        su airflow -c 'python /opt/airflow/src/data_pipeline.py'
+      "
+
+  # Helper service to copy only .duckdb files from Docker volume to local directory
+  copy-output:
+    image: alpine:latest
+    profiles:
+      - copy
+    volumes:
+      - output-volume:/source
+      - ./output:/dest
+    command: >
+      sh -c "
+        echo 'Copying .duckdb files from Docker volume to local directory...' &&
+        find /source -name '*.duckdb*' -exec cp {} /dest/ \; 2>/dev/null || echo 'No .duckdb files found' &&
+        echo 'Copy of .duckdb files completed.'
+      "
 
 volumes:
   postgres-db-volume:
+  output-volume:  # Docker volume for output files

@@ -25,8 +25,10 @@ USER airflow
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Create necessary directories
-RUN mkdir -p /opt/airflow/input /opt/airflow/output /opt/airflow/src
+# Create necessary directories with proper permissions
+RUN mkdir -p /opt/airflow/input /opt/airflow/output /opt/airflow/src && \
+    chown -R airflow:root /opt/airflow/input /opt/airflow/output /opt/airflow/src && \
+    chmod -R 775 /opt/airflow/input /opt/airflow/output /opt/airflow/src
 
 # Copy source code
 COPY src/ /opt/airflow/src/
