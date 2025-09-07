@@ -28,7 +28,6 @@ from data_pipeline import run_pipeline, get_sample_output, create_spark_session
 default_args = {
     'owner': 'data-engineering-team',
     'depends_on_past': False,
-    'start_date': days_ago(1),
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
@@ -40,9 +39,11 @@ dag = DAG(
     'property_data_pipeline',
     default_args=default_args,
     description='Process property listing data from JSONL to DuckDB',
-    schedule_interval=timedelta(days=1),  # Run daily
-    catchup=False,
-    tags=['data-engineering', 'property', 'etl'],
+    schedule_interval=None,  # Manual trigger only - no automatic runs
+    start_date=datetime(2025, 1, 1),  # Recent start date
+    catchup=False,  # Never run for past dates
+    max_active_runs=1,  # Only one instance at a time
+    tags=['data-engineering', 'property', 'etl', 'manual'],
 )
 
 

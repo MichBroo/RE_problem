@@ -24,13 +24,14 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
-      # Configurazione Spark semplificata
-      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+      # Java and Spark configuration - JAVA_HOME rilevato dinamicamente nel codice
+      SPARK_HOME: /home/airflow/.local/lib/python3.11/site-packages/pyspark
       PYSPARK_PYTHON: python3
       PYSPARK_DRIVER_PYTHON: python3
       SPARK_LOCAL_IP: 127.0.0.1
-      SPARK_DRIVER_MEMORY: 1g
-      SPARK_EXECUTOR_MEMORY: 1g
+      SPARK_DRIVER_MEMORY: 512m
+      SPARK_EXECUTOR_MEMORY: 512m
+      SPARK_DRIVER_HOST: 127.0.0.1
       PYTHONPATH: /opt/airflow/src
     ports:
       - "8080:8080"

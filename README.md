@@ -34,9 +34,11 @@ The pipeline leverages Apache Spark for horizontal scalability and includes comp
 ## Prerequisites
 
 - Docker and Docker Compose
-- At least 2GB RAM and 1 CPU core (4GB+ recommended for larger datasets)
-- 5GB free disk space
-- Java 11+ (automatically installed in Docker container)
+- At least 1.5GB RAM and 2 CPU cores (3GB+ recommended for larger datasets)
+- 3GB free disk space
+- **Multi-architecture support**: Works on x86_64, ARM64 (Apple Silicon), and other architectures
+- Java 11+ (automatically installed and detected in Docker container)
+- PostgreSQL database (automatically provisioned via Docker Compose)
 
 ## Quick Start
 
@@ -63,6 +65,11 @@ docker compose ps
 # URL: http://localhost:8080
 # Username: admin
 # Password: admin
+
+# The DAG is configured for MANUAL execution only
+# - No automatic scheduling (schedule_interval=None)
+# - No catchup for past dates (catchup=False)
+# - Click "Trigger DAG" to run manually
 ```
 
 #### Standalone Option (Quick Test)
@@ -298,5 +305,66 @@ Sample Output:
 ```
 
 The pipeline successfully processes property data with comprehensive validation, quality checks, and scalability features ready for production use.
+
+## Troubleshooting
+
+### Common Issues
+
+#### Spark Java Gateway Error
+If you encounter `[JAVA_GATEWAY_EXITED] Java gateway process exited before sending its port number`:
+
+1. **Restart containers** with fresh build:
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
+2. **Check memory allocation**: Ensure your system has at least 1.5GB available RAM
+
+3. **Verify Java installation** in container:
+   ```bash
+   docker compose exec airflow java -version
+   ```
+
+#### Airflow Connection Issues
+- Wait 1-2 minutes after startup for all services to initialize
+- Check PostgreSQL health: `docker compose ps`
+- Verify logs: `docker compose logs airflow`
+
+#### Performance Issues
+- For large datasets (>1M records), increase memory in `docker-compose.yml`:
+  ```yaml
+  SPARK_DRIVER_MEMORY: 1g
+  SPARK_EXECUTOR_MEMORY: 1g
+  ```
+
+### Resource Optimization
+
+The pipeline is optimized for container environments with:
+- **Memory**: 512MB default (configurable)
+- **CPU**: 2 cores maximum usage
+- **Networking**: Container-friendly port allocation
+- **Fallback**: Minimal configuration if resources are limited
+
+### Multi-Architecture Support
+
+The project automatically detects and adapts to different architectures:
+- **x86_64** (Intel/AMD processors)
+- **ARM64** (Apple Silicon M1/M2, ARM servers)
+- **Other architectures** supported by OpenJDK
+
+**Test compatibility:**
+```bash
+# Test multi-architecture compatibility
+docker compose exec airflow python test_multiarch.py
+
+# Or locally
+python test_multiarch.py
+```
+
+**Architecture detection includes:**
+- Dynamic Java path discovery (`/usr/lib/jvm/java-11-openjdk-*`)
+- PySpark installation auto-detection
+- Platform-specific optimizations
 
 ---

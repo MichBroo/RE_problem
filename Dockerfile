@@ -6,11 +6,17 @@ USER root
 # Installa solo le dipendenze essenziali
 RUN apt-get update && apt-get install -y \
     openjdk-11-jdk-headless \
+    procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Imposta JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+# Rileva automaticamente JAVA_HOME per qualsiasi architettura
+RUN JAVA_HOME_PATH=$(find /usr/lib/jvm -name "java-11-openjdk-*" -type d | head -1) && \
+    echo "export JAVA_HOME=$JAVA_HOME_PATH" >> /etc/environment && \
+    echo "JAVA_HOME detected: $JAVA_HOME_PATH" && \
+    java -version && echo "Java installation verified for $(uname -m) architecture"
+
+# Non impostiamo ENV JAVA_HOME fisso - sarà rilevato dinamicamente
 
 # Torna all'utente airflow
 USER airflow
@@ -28,8 +34,9 @@ COPY dags/ /opt/airflow/dags/
 
 # Configura l'ambiente Python e Spark
 ENV PYTHONPATH="${PYTHONPATH}:/opt/airflow/src"
-ENV SPARK_HOME=/opt/airflow/.local/lib/python3.11/site-packages/pyspark
+ENV SPARK_HOME=/home/airflow/.local/lib/python3.11/site-packages/pyspark
 ENV PYSPARK_PYTHON=python3
 ENV PYSPARK_DRIVER_PYTHON=python3
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
 WORKDIR /opt/airflow
