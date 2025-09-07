@@ -90,7 +90,7 @@ services:
     command: >
       sh -c "
         echo 'Copying .duckdb files from Docker volume to local directory...' &&
-        find /source -name '*.duckdb*' -exec cp {} /dest/ \; 2>/dev/null || echo 'No .duckdb files found' &&
+        find /source -name '*.duckdb' -exec cp {} /dest/ \; 2>/dev/null || echo 'No .duckdb files found' &&
         echo 'Copy of .duckdb files completed.'
       "
 
