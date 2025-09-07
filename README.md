@@ -92,9 +92,10 @@ python src/data_pipeline.py
 
 - **Airflow UI**: http://localhost:8080
 - **Logs**: Check `logs/` directory
-- **Output**: Results saved in Docker volume, copy with `docker-compose run --rm copy-output`
-  - On Windows, output files are stored in a Docker volume to avoid permission issues
-  - Use the copy service to extract .duckdb files to the local `output/` directory
+- **Output**: Results automatically copied to local `output/` directory
+  - On Windows, files are stored in a Docker volume to avoid permission issues
+  - A background service automatically copies .duckdb files to the local directory every 30 seconds
+  - **Note**: If the local .duckdb file is busy (e.g., opened in DuckDB client), the copy will be skipped
 
 ## Project Structure
 
