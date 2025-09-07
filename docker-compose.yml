@@ -92,11 +92,12 @@ services:
       sh -c "
         echo 'Starting file copy watcher...' &&
         while true; do
-          if find /source -name '*.duckdb' -newer /tmp/last_copy 2>/dev/null | grep -q .; then
-            echo 'New .duckdb files detected, copying...' &&
-            find /source -name '*.duckdb' -exec cp -f {} /dest/ \; 2>/dev/null &&
-            touch /tmp/last_copy &&
+          if find /source -name '*.duckdb' 2>/dev/null | grep -q .; then
+            echo 'DuckDB files found, copying...' &&
+            find /source -name '*.duckdb' -exec cp -f {} /dest/ \\; 2>/dev/null &&
             echo 'Copy completed.'
+          else
+            echo 'No .duckdb files found, waiting...'
           fi
           sleep 30
         done
