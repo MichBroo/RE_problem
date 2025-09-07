@@ -1,5 +1,5 @@
 services:
-  # Database PostgreSQL per Airflow
+  # PostgreSQL Database for Airflow
   postgres:
     image: postgres:13
     environment:
@@ -15,7 +15,7 @@ services:
       start_period: 5s
     restart: always
 
-  # Servizio principale Airflow - solo webserver e scheduler in uno
+  # Main Airflow service - webserver and scheduler in one
   airflow:
     build: .
     environment:
@@ -24,7 +24,7 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
-      # Java and Spark configuration - JAVA_HOME rilevato dinamicamente nel codice
+      # Java and Spark configuration - JAVA_HOME detected dynamically in code
       SPARK_HOME: /home/airflow/.local/lib/python3.11/site-packages/pyspark
       PYSPARK_PYTHON: python3
       PYSPARK_DRIVER_PYTHON: python3
@@ -53,7 +53,7 @@ services:
         airflow scheduler
       "
 
-  # Servizio standalone per eseguire la pipeline senza Airflow (opzionale)
+  # Standalone service to run the pipeline without Airflow (optional)
   pipeline-standalone:
     build: .
     profiles:

@@ -1,38 +1,38 @@
 FROM apache/airflow:2.7.3-python3.11
 
-# Switch to root per installare dipendenze di sistema
+# Switch to root to install system dependencies
 USER root
 
-# Installa solo le dipendenze essenziali
+# Install only essential dependencies
 RUN apt-get update && apt-get install -y \
     openjdk-11-jdk-headless \
     procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Rileva automaticamente JAVA_HOME per qualsiasi architettura
+# Automatically detect JAVA_HOME for any architecture
 RUN JAVA_HOME_PATH=$(find /usr/lib/jvm -name "java-11-openjdk-*" -type d | head -1) && \
     echo "export JAVA_HOME=$JAVA_HOME_PATH" >> /etc/environment && \
     echo "JAVA_HOME detected: $JAVA_HOME_PATH" && \
     java -version && echo "Java installation verified for $(uname -m) architecture"
 
-# Non impostiamo ENV JAVA_HOME fisso - sarà rilevato dinamicamente
+# Do not set fixed ENV JAVA_HOME - it will be detected dynamically
 
-# Torna all'utente airflow
+# Return to airflow user
 USER airflow
 
-# Copia e installa i requirements Python
+# Copy and install Python requirements
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Crea le directory necessarie
+# Create necessary directories
 RUN mkdir -p /opt/airflow/input /opt/airflow/output /opt/airflow/src
 
-# Copia il codice sorgente
+# Copy source code
 COPY src/ /opt/airflow/src/
 COPY dags/ /opt/airflow/dags/
 
-# Configura l'ambiente Python e Spark
+# Configure Python and Spark environment
 ENV PYTHONPATH="${PYTHONPATH}:/opt/airflow/src"
 ENV SPARK_HOME=/home/airflow/.local/lib/python3.11/site-packages/pyspark
 ENV PYSPARK_PYTHON=python3
