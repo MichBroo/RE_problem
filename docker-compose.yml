@@ -82,16 +82,24 @@ services:
   # Helper service to copy only .duckdb files from Docker volume to local directory
   copy-output:
     image: alpine:latest
-    profiles:
-      - copy
+    depends_on:
+      - airflow
     volumes:
       - output-volume:/source
       - ./output:/dest
+    restart: unless-stopped
     command: >
       sh -c "
-        echo 'Copying .duckdb files from Docker volume to local directory...' &&
-        find /source -name '*.duckdb' -exec cp {} /dest/ \; 2>/dev/null || echo 'No .duckdb files found' &&
-        echo 'Copy of .duckdb files completed.'
+        echo 'Starting file copy watcher...' &&
+        while true; do
+          if find /source -name '*.duckdb' -newer /tmp/last_copy 2>/dev/null | grep -q .; then
+            echo 'New .duckdb files detected, copying...' &&
+            find /source -name '*.duckdb' -exec cp -f {} /dest/ \; 2>/dev/null &&
+            touch /tmp/last_copy &&
+            echo 'Copy completed.'
+          fi
+          sleep 30
+        done
       "
 
 volumes:
