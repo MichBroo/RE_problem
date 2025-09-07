@@ -417,6 +417,7 @@ def save_to_duckdb(df, duckdb_conn):
     logger.info(f"Saved {record_count} records to DuckDB")
     
     
+    
 
 def get_processing_stats(original_df, final_df, failed_processing: int = 0):
     """
@@ -514,36 +515,63 @@ def get_sample_output(duckdb_conn, limit: int = 5) -> List[Dict[str, Any]]:
     return [dict(zip(columns, row)) for row in result]
 
 
-def main():
-    """Main function for running the pipeline directly."""
+def execute_pipeline(input_file: str, db_path: str, session_name: str = "PropertyDataPipeline") -> Dict[str, int]:
+    """
+    Execute the complete pipeline with full logging and output.
     
-    input_file = "input/scraping_data.jsonl"
-    db_path = "output/properties.duckdb"
+    Args:
+        input_file: Path to input JSONL file
+        db_path: Path to output DuckDB file  
+        session_name: Name for the Spark session
+        
+    Returns:
+        Dictionary with processing statistics
+    """
+    print(f"🚀 Running Property Data Pipeline: {session_name}")
     
     # Ensure output directory exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     
     # Create Spark session
-    spark = create_spark_session()
+    spark = create_spark_session(session_name)
     
     try:
+        # Run the complete pipeline
         stats = run_pipeline(spark, input_file, db_path)
         
-        print("\nPipeline Statistics:")
+        print("\n📊 Pipeline Statistics:")
         for key, value in stats.items():
             print(f"  {key}: {value}")
         
-        print("\nSample Output:")
+        print("\n📋 Sample Output:")
         duckdb_conn = duckdb.connect(db_path)
         try:
-            samples = get_sample_output(duckdb_conn)
-            for sample in samples:
-                print(f"  {sample}")
+            samples = get_sample_output(duckdb_conn, 3)
+            for i, sample in enumerate(samples, 1):
+                print(f"  {i}. {sample}")
         finally:
             duckdb_conn.close()
+            
+        print(f"\n✅ Pipeline completed successfully!")
+        print(f"📁 Output saved to: {db_path}")
+        
+        return stats
+        
+    except Exception as e:
+        print(f"\n❌ Pipeline failed: {e}")
+        raise
     finally:
-        # Stop Spark session
+        # Clean up Spark session
         spark.stop()
+        print("🛑 Spark session stopped")
+
+
+def main():
+    """Main function for running the pipeline directly (standalone mode)."""
+    input_file = "input/scraping_data.jsonl"
+    db_path = "output/properties.duckdb"
+    
+    execute_pipeline(input_file, db_path, "StandalonePropertyPipeline")
 
 
 if __name__ == "__main__":

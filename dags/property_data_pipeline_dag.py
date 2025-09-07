@@ -21,7 +21,7 @@ from airflow.utils.dates import days_ago
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from data_pipeline import run_pipeline, get_sample_output, create_spark_session
+from data_pipeline import execute_pipeline, get_sample_output
 
 
 # Default arguments for the DAG
@@ -70,7 +70,7 @@ def check_input_file(**context):
 
 def run_data_pipeline(**context):
     """
-    Run the main data processing pipeline.
+    Run the main data processing pipeline using unified execution.
     
     Args:
         context: Airflow context dictionary
@@ -81,22 +81,11 @@ def run_data_pipeline(**context):
     input_file = "/opt/airflow/input/scraping_data.jsonl"
     db_path = "/opt/airflow/output/properties.duckdb"
     
-    # Ensure output directory exists
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    
-    # Create and run pipeline with Spark
-    spark = create_spark_session("AirflowPropertyPipeline")
-    try:
-        stats = run_pipeline(spark, input_file, db_path)
-    finally:
-        spark.stop()
+    # Execute pipeline using unified function
+    stats = execute_pipeline(input_file, db_path, "AirflowPropertyPipeline")
     
     # Push statistics to XCom for downstream tasks
     context['task_instance'].xcom_push(key='pipeline_stats', value=stats)
-    
-    print("Pipeline Statistics:")
-    for key, value in stats.items():
-        print(f"  {key}: {value}")
     
     return stats
 

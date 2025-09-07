@@ -39,7 +39,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./input:/opt/airflow/input
-      - ./output:/opt/airflow/output
+      - ./output:/opt/airflow/output:rw  # Read-write permissions
       - ./src:/opt/airflow/src
     depends_on:
       postgres:
@@ -60,7 +60,7 @@ services:
       - standalone
     volumes:
       - ./input:/opt/airflow/input
-      - ./output:/opt/airflow/output
+      - ./output:/opt/airflow/output:rw  # Read-write permissions
       - ./src:/opt/airflow/src
     environment:
       PYTHONPATH: "/opt/airflow/src"

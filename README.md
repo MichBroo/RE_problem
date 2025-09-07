@@ -47,6 +47,9 @@ The pipeline leverages Apache Spark for horizontal scalability and includes comp
 ```bash
 # Navigate to project directory
 cd /path/to/RE_problem
+
+# Create output directory if it doesn't exist
+mkdir -p output
 ```
 
 ### 2. Run with Docker Compose
@@ -75,8 +78,14 @@ docker compose ps
 #### Standalone Option (Quick Test)
 
 ```bash
-# Run pipeline without Airflow
+# Option 1: Using Docker Compose standalone profile
 docker compose --profile standalone up pipeline-standalone
+
+# Option 2: Direct execution in container
+docker compose exec airflow python /opt/airflow/src/data_pipeline.py
+
+# Option 3: Local execution (requires local Python setup)
+python src/data_pipeline.py
 ```
 
 ### 3. Monitor Execution
@@ -90,8 +99,7 @@ docker compose --profile standalone up pipeline-standalone
 ```
 RE_problem/
 ├── src/
-│   ├── data_pipeline.py             # Main pipeline logic
-│   └── spark_manager.py             # Spark session management
+│   └── data_pipeline.py             # Main pipeline logic and Spark management
 ├── dags/
 │   └── property_data_pipeline_dag.py # Airflow DAG definition
 ├── input/
@@ -151,23 +159,27 @@ The pipeline applies the following filters:
 - `transform_data()`: Applies transformations using PySpark DataFrames
 - `apply_filters()`: Filters data based on business rules
 - `save_to_duckdb()`: Saves processed data to DuckDB
-- `run_pipeline()`: Orchestrates the complete ETL process
+- `run_pipeline()`: Core ETL orchestration (low-level)
+- `execute_pipeline()`: Complete pipeline execution with logging and output (unified entry point)
 
-### 2. Spark Management (`src/spark_manager.py`)
+### 2. Spark Management
 
-**SparkManager Class:**
-- Manages Spark session lifecycle
-- Optimizes Spark configuration based on dataset size
-- Provides context manager for resource cleanup
+**Spark Session Creation (`create_spark_session`):**
+- Multi-architecture Java detection (ARM64, x86_64)
+- Container-optimized Spark configuration
+- Automatic resource management and cleanup
+- Fallback configurations for resource-constrained environments
 
 ### 3. Orchestration (`dags/property_data_pipeline_dag.py`)
 
 **Airflow Tasks:**
 1. `check_input_file`: Validates input file exists
-2. `run_pipeline`: Executes main ETL process
-3. `validate_output`: Performs data quality checks
-4. `generate_report`: Creates execution summary
-5. `cleanup_temp_files`: Cleans up temporary files
+2. `run_pipeline`: Executes the pipeline using unified execution
+3. `validate_output`: Validates processed data quality
+
+**Task Dependencies:** `check_input_file` → `run_pipeline` → `validate_output`
+
+**Unified Execution:** Both Airflow and standalone modes use the same `execute_pipeline()` function, ensuring consistency and reducing code duplication.
 
 ## Usage Examples
 

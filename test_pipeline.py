@@ -14,8 +14,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import once at module level
-from spark_manager import SparkManager
-from data_pipeline import parse_price_spark, apply_filters, run_pipeline, get_sample_output
+from data_pipeline import parse_price_spark, apply_filters, get_sample_output, create_spark_session
 
 
 def test_price_parsing():
@@ -23,8 +22,8 @@ def test_price_parsing():
     print("Testing price parsing...")
     
     try:
-        spark_manager = SparkManager("TestPriceParsing")
-        with spark_manager as spark:
+        spark = create_spark_session("TestPriceParsing")
+        try:
             # Create test DataFrame
             test_data = [
                 {"id": "test1", "raw_price": "530 000€/mo.", "living_area": 100.0, 
@@ -56,6 +55,8 @@ def test_price_parsing():
                     return False
             
             return True
+        finally:
+            spark.stop()
     except Exception as e:
         print(f"  ✗ Error in price parsing test: {e}")
         return False
@@ -66,8 +67,8 @@ def test_filtering():
     print("Testing filtering logic...")
     
     try:
-        spark_manager = SparkManager("TestFiltering")
-        with spark_manager as spark:
+        spark = create_spark_session("TestFiltering")
+        try:
             # Create test data with various filter conditions
             test_data = [
                 # Valid record
@@ -121,7 +122,8 @@ def test_filtering():
             else:
                 print(f"  ✗ Expected 1 record after filtering, got {result_count}")
                 return False
-                
+        finally:
+            spark.stop()
     except Exception as e:
         print(f"  ✗ Error in filtering test: {e}")
         return False
@@ -138,8 +140,8 @@ def test_pipeline_integration():
         return False
     
     try:
-        spark_manager = SparkManager("TestIntegration")
-        with spark_manager as spark:
+        spark = create_spark_session("TestIntegration")
+        try:
             stats = run_pipeline(spark, input_file, ":memory:")
             
             print(f"  ✓ PySpark pipeline completed successfully")
@@ -169,7 +171,8 @@ def test_pipeline_integration():
                 print(f"  ✓ Spark UI was available at: {spark.sparkContext.uiWebUrl}")
             
             return True
-            
+        finally:
+            spark.stop()
     except Exception as e:
         print(f"  ✗ PySpark pipeline failed: {e}")
         import traceback
