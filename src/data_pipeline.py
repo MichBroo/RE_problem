@@ -327,10 +327,10 @@ def transform_data(df):
         func.to_date(func.col("scraping_date"), "yyyy-MM-dd")
     )
     
-    # Calculate price per square meter
+    # Calculate price per square meter (rounded to 2 decimal places)
     df_with_price_per_sqm = df_with_date.withColumn(
         "price_per_square_meter",
-        func.col("price") / func.col("living_area")
+        func.round(func.col("price") / func.col("living_area"), 2)
     )
     
     # Select final columns in correct order

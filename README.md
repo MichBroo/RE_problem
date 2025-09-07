@@ -132,6 +132,8 @@ RE_problem/
 }
 ```
 
+**Note**: `price_per_square_meter` is automatically rounded to 2 decimal places for consistency.
+
 ## Filtering Criteria
 
 The pipeline applies the following filters:
